@@ -25,6 +25,26 @@ class VectorStore:
         self.embeddings = np.array([], dtype=np.float32).reshape(0, 0)
         self.metadatas = []
 
+    def remove_by_sources(self, sources: set[str]) -> int:
+        """删除指定来源文件的所有块，返回删除数量。"""
+        if not sources or self.size == 0:
+            return 0
+
+        keep_indices = [
+            i for i, m in enumerate(self.metadatas) if m.get("source") not in sources
+        ]
+        removed = self.size - len(keep_indices)
+        if removed == 0:
+            return 0
+
+        if keep_indices:
+            self.ids = [self.ids[i] for i in keep_indices]
+            self.metadatas = [self.metadatas[i] for i in keep_indices]
+            self.embeddings = self.embeddings[keep_indices]
+        else:
+            self.clear()
+        return removed
+
     def add(self, chunks: list[Chunk], vectors: np.ndarray) -> None:
         if len(chunks) != len(vectors):
             raise ValueError("chunks 与 vectors 数量不一致")
@@ -77,6 +97,7 @@ class VectorStore:
             "metadatas": self.metadatas,
             "dim": int(self.embeddings.shape[1]) if self.embeddings.size else 0,
             "count": self.size,
+            "embed_model": None,
         }
         (storage_dir / "index.json").write_text(
             json.dumps(index_data, ensure_ascii=False, indent=2),

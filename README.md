@@ -4,12 +4,14 @@
 
 ## 功能
 
-- 从 `data/` 加载 `.txt`、`.md`、`.pdf`
-- 文本分块（可配置大小与重叠）
-- Ollama 嵌入 → 本地向量索引（`storage/`）
-- 余弦相似度 Top-K 检索
-- 将检索上下文拼入提示词，由 Ollama 生成回答
-- Streamlit 界面：上传文档、重建索引、聊天并展示引用来源
+- 从 `data/` 加载 `.txt`、`.md`、`.pdf`、`.docx`、`.html`
+- Markdown 标题感知分块 + 增量建索引（仅处理变更文件）
+- Ollama 嵌入 → 本地向量索引（`storage/` + `manifest.json`）
+- **混合检索**：向量余弦相似度 + BM25，RRF 融合 + 关键词重排
+- 相似度阈值过滤、相邻块去重合并
+- 流式回答、多轮对话上下文、Ollama 健康检查
+- Streamlit：知识库管理、网页抓取、引用可视化、对话导出
+- FastAPI：`uvicorn api:app` 提供 `/health`、`/ingest`、`/query`
 
 ## 环境要求
 
@@ -66,7 +68,13 @@ python ingest.py
 python ingest.py --rebuild
 ```
 
-成功后在 `storage/` 下会生成 `embeddings.npy` 与 `index.json`。
+增量更新（默认，仅处理新增/修改/删除的文件）：
+
+```powershell
+python ingest.py
+```
+
+成功后在 `storage/` 下会生成 `embeddings.npy`、`index.json`、`manifest.json`。
 
 ### 6. 启动 Web 界面
 
@@ -74,24 +82,39 @@ python ingest.py --rebuild
 streamlit run app.py
 ```
 
-浏览器打开后，在侧栏可上传文档、点击「重建索引」，在主界面进行问答。每次回答可展开查看引用片段与相似度。
+浏览器打开后，在侧栏可上传文档、**增量索引**或**全量重建**，在主界面流式问答。每次回答可展开查看引用片段与相似度条形图。
+
+### 7. 启动 API（可选）
+
+```powershell
+uvicorn api:app --reload --port 8000
+```
+
+文档：http://localhost:8000/docs
+
+### 8. 运行测试
+
+```powershell
+pytest tests/ -v
+```
 
 ## 项目结构
 
 ```
 ├── app.py              # Streamlit 界面
+├── api.py              # FastAPI REST
 ├── ingest.py           # CLI 建索引
-├── rag.py              # RAG 流水线（ingest + query）
-├── loader.py           # 文档加载
-├── chunker.py          # 文本分块
-├── embedder.py         # Ollama 嵌入
-├── vector_store.py     # 向量存储与检索
-├── config.py           # 配置
+├── rag.py              # RAG 流水线
+├── retrieval.py        # 混合检索 / 重排 / 去重
+├── ollama_health.py    # 健康检查
+├── index_manifest.py   # 增量索引清单
+├── prompts.py          # 提示词模板
+├── tests/              # 单元测试
 ├── data/               # 知识库文档
-├── storage/            # 向量索引（自动生成，已 gitignore）
-├── requirements.txt
-└── .env.example
+└── storage/            # 向量索引（自动生成）
 ```
+
+详见 [ROADMAP.md](ROADMAP.md) 了解已完成与待办项。
 
 ## 配置说明
 
@@ -102,7 +125,10 @@ streamlit run app.py
 | `CHAT_MODEL` | `qwen2.5:7b` | 对话模型 |
 | `CHUNK_SIZE` | `500` | 分块字符数 |
 | `CHUNK_OVERLAP` | `80` | 块间重叠 |
-| `TOP_K` | `4` | 检索条数 |
+| `TOP_K` | `4` | 最终送入 LLM 的条数 |
+| `RETRIEVE_N` | `12` | 混合检索候选数 |
+| `SIMILARITY_THRESHOLD` | `0.3` | 相似度下限 |
+| `HYBRID_SEARCH` | `true` | 是否启用 BM25+向量融合 |
 
 更换嵌入模型后必须执行 `python ingest.py --rebuild` 重建索引。
 

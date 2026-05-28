@@ -5,6 +5,10 @@ from typing import TypedDict
 
 from pypdf import PdfReader
 
+from logger import get_logger
+
+log = get_logger()
+
 
 class Document(TypedDict):
     text: str
@@ -12,7 +16,7 @@ class Document(TypedDict):
     doc_id: str
 
 
-SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf"}
+SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx", ".html", ".htm"}
 
 
 def _read_text_file(path: Path) -> str:
@@ -29,8 +33,43 @@ def _read_pdf(path: Path) -> str:
     return "\n\n".join(parts)
 
 
-def load_documents(data_dir: Path) -> list[Document]:
-    """遍历 data_dir，加载所有支持的文档。"""
+def _read_docx(path: Path) -> str:
+    try:
+        from docx import Document as DocxDocument
+    except ImportError as e:
+        raise ImportError("读取 docx 需要安装: pip install python-docx") from e
+    doc = DocxDocument(str(path))
+    return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+
+def _read_html(path: Path) -> str:
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError as e:
+        raise ImportError("读取 html 需要安装: pip install beautifulsoup4") from e
+    html = path.read_text(encoding="utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer"]):
+        tag.decompose()
+    return soup.get_text(separator="\n", strip=True)
+
+
+def _read_file(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return _read_pdf(path)
+    if suffix == ".docx":
+        return _read_docx(path)
+    if suffix in (".html", ".htm"):
+        return _read_html(path)
+    return _read_text_file(path)
+
+
+def load_documents(
+    data_dir: Path,
+    sources: set[str] | None = None,
+) -> list[Document]:
+    """遍历 data_dir，加载文档；sources 为相对路径集合时仅加载这些文件。"""
     documents: list[Document] = []
     if not data_dir.exists():
         return documents
@@ -40,22 +79,21 @@ def load_documents(data_dir: Path) -> list[Document]:
     )
 
     for path in files:
-        suffix = path.suffix.lower()
+        rel_source = str(path.relative_to(data_dir)).replace("\\", "/")
+        if sources is not None and rel_source not in sources:
+            continue
+
         try:
-            if suffix == ".pdf":
-                text = _read_pdf(path)
-            else:
-                text = _read_text_file(path)
+            text = _read_file(path)
         except Exception as e:
-            print(f"跳过 {path.name}: {e}")
+            log.warning("跳过 %s: %s", path.name, e)
             continue
 
         text = text.strip()
         if not text:
-            print(f"跳过空文件: {path.name}")
+            log.warning("跳过空文件: %s", path.name)
             continue
 
-        rel_source = str(path.relative_to(data_dir))
         documents.append(
             Document(
                 text=text,

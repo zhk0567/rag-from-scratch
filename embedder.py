@@ -4,19 +4,20 @@ import numpy as np
 import ollama
 
 import config
+from logger import get_logger
+
+log = get_logger()
 
 
 def _client():
     return ollama.Client(host=config.OLLAMA_HOST)
 
 
-def embed_texts(texts: list[str], batch_size: int = 32) -> np.ndarray:
-    """
-    批量获取文本嵌入向量，返回 shape (N, dim) 的 float32 数组。
-    """
+def embed_texts(texts: list[str], batch_size: int | None = None) -> np.ndarray:
     if not texts:
         return np.array([], dtype=np.float32).reshape(0, 0)
 
+    batch_size = batch_size or config.EMBED_BATCH_SIZE
     client = _client()
     all_vectors: list[list[float]] = []
 
@@ -32,4 +33,5 @@ def embed_texts(texts: list[str], batch_size: int = 32) -> np.ndarray:
                 f"且已执行: ollama pull {config.EMBED_MODEL}\n原始错误: {e}"
             ) from e
 
+    log.debug("嵌入 %d 条文本", len(texts))
     return np.array(all_vectors, dtype=np.float32)

@@ -1,5 +1,6 @@
-"""文档分块，优先在段落边界切分。"""
+"""文档分块：段落边界 + Markdown 标题结构。"""
 
+import re
 from typing import TypedDict
 
 from loader import Document
@@ -17,8 +18,28 @@ def _split_paragraphs(text: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+def _split_markdown_sections(text: str) -> list[str]:
+    """按 Markdown 标题（# ~ ###）切分为章节。"""
+    pattern = re.compile(r"^(#{1,3})\s+(.+)$", re.MULTILINE)
+    matches = list(pattern.finditer(text))
+    if not matches:
+        return _split_paragraphs(text)
+
+    sections: list[str] = []
+    for i, match in enumerate(matches):
+        start = match.start()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        section = text[start:end].strip()
+        if section:
+            sections.append(section)
+
+    preamble = text[: matches[0].start()].strip()
+    if preamble:
+        sections.insert(0, preamble)
+    return sections if sections else _split_paragraphs(text)
+
+
 def _merge_to_chunks(paragraphs: list[str], chunk_size: int, overlap: int) -> list[str]:
-    """将段落合并为不超过 chunk_size 的块，块间保留 overlap 字符重叠。"""
     if not paragraphs:
         return []
 
@@ -41,8 +62,7 @@ def _merge_to_chunks(paragraphs: list[str], chunk_size: int, overlap: int) -> li
                 start = 0
                 while start < len(para):
                     end = start + chunk_size
-                    piece = para[start:end]
-                    chunks.append(piece)
+                    chunks.append(para[start:end])
                     start = end - overlap if overlap < chunk_size else end
                 current = ""
 
@@ -57,13 +77,16 @@ def split_documents(
     chunk_size: int = 500,
     overlap: int = 80,
 ) -> list[Chunk]:
-    """将文档列表切分为带元数据的块。"""
     all_chunks: list[Chunk] = []
 
     for doc in docs:
-        paragraphs = _split_paragraphs(doc["text"])
-        texts = _merge_to_chunks(paragraphs, chunk_size, overlap)
+        source = doc["source"].lower()
+        if source.endswith(".md"):
+            sections = _split_markdown_sections(doc["text"])
+        else:
+            sections = _split_paragraphs(doc["text"])
 
+        texts = _merge_to_chunks(sections, chunk_size, overlap)
         if not texts and doc["text"]:
             texts = _merge_to_chunks([doc["text"]], chunk_size, overlap)
 
