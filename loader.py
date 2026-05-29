@@ -17,7 +17,9 @@ class Document(TypedDict):
     doc_id: str
 
 
-SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx", ".html", ".htm"}
+from multimodal import IMAGE_EXTENSIONS, describe_image_file, extract_pdf_image_descriptions, merge_text_and_vision
+
+SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx", ".html", ".htm"} | IMAGE_EXTENSIONS
 
 
 def _read_text_file(path: Path) -> str:
@@ -35,7 +37,11 @@ def _read_pdf(path: Path) -> str:
     if config.OCR_ENABLED:
         from pdf_ocr import pdf_text_with_ocr_fallback
 
-        return pdf_text_with_ocr_fallback(path, extracted, config.OCR_MIN_TEXT_LEN)
+        extracted = pdf_text_with_ocr_fallback(path, extracted, config.OCR_MIN_TEXT_LEN)
+
+    if config.USE_MULTIMODAL:
+        vision = extract_pdf_image_descriptions(path)
+        extracted = merge_text_and_vision(extracted, vision)
     return extracted
 
 
@@ -60,8 +66,17 @@ def _read_html(path: Path) -> str:
     return soup.get_text(separator="\n", strip=True)
 
 
+def _read_image(path: Path) -> str:
+    if not config.USE_MULTIMODAL:
+        log.warning("跳过图片 %s（USE_MULTIMODAL=false）", path.name)
+        return ""
+    return describe_image_file(path)
+
+
 def _read_file(path: Path) -> str:
     suffix = path.suffix.lower()
+    if suffix in IMAGE_EXTENSIONS:
+        return _read_image(path)
     if suffix == ".pdf":
         return _read_pdf(path)
     if suffix == ".docx":

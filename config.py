@@ -41,6 +41,10 @@ OCR_ENABLED = os.getenv("OCR_ENABLED", "true").lower() in ("1", "true", "yes")
 OCR_MIN_TEXT_LEN = int(os.getenv("OCR_MIN_TEXT_LEN", "50"))
 UI_LANG = os.getenv("UI_LANG", "zh")
 
+USE_MULTIMODAL = os.getenv("USE_MULTIMODAL", "false").lower() in ("1", "true", "yes")
+VISION_MODEL = os.getenv("VISION_MODEL", "llava")
+MULTIMODAL_MAX_IMAGES = int(os.getenv("MULTIMODAL_MAX_IMAGES", "10"))
+
 
 def validate_config() -> None:
     if CHUNK_OVERLAP >= CHUNK_SIZE:
@@ -51,6 +55,8 @@ def validate_config() -> None:
         raise ValueError("SIMILARITY_THRESHOLD 须在 0~1 之间")
     if EMBED_WORKERS < 1:
         raise ValueError("EMBED_WORKERS 必须 >= 1")
+    if MULTIMODAL_MAX_IMAGES < 1:
+        raise ValueError("MULTIMODAL_MAX_IMAGES 必须 >= 1")
 
 
 validate_config()

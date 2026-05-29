@@ -1,92 +1,40 @@
 # 后续任务清单
 
-基于当前 MVP 的演进路线。已完成项标记为 `[x]`。
-
----
-
-## P0 — 稳定性与可用性
-
-- [x] Ollama 健康检查
-- [x] 增量建索引
-- [x] 流式回答
-- [x] 错误与日志
-- [x] 单元测试
-
----
-
-## P1 — 检索质量
-
-- [x] 相似度阈值
-- [x] 重排序（Rerank）
-- [x] 混合检索
-- [x] **HyDE / 查询改写**：`query_rewrite.py`（`USE_HYDE`、`USE_QUERY_REWRITE`）
-- [x] Markdown 标题分块
-- [x] 去重与合并
-
----
-
-## P2 — 功能扩展
-
-- [x] 多轮对话
-- [x] FastAPI 服务
-- [x] 更多文档格式
-- [x] **扫描版 PDF OCR**：`pdf_ocr.py` + `requirements-ocr.txt`（可选依赖）
-- [x] 网页抓取
-- [x] 对话导出
-
----
-
-## P3 — 工程与部署
-
-- [x] Docker Compose
-- [x] GitHub Actions CI
-- [x] 配置校验
-- [x] 索引版本化
-- [x] **性能 profiling**：`profile_ingest.py` + `EMBED_WORKERS` 并发嵌入
-
----
-
-## P4 — 体验与展示
-
-- [x] 检索可视化
-- [x] 侧栏知识库管理
-- [x] 暗色主题
-- [x] 示例问题
-- [x] **中英文切换**：`i18n.py` + Streamlit 语言选择
+全部核心路线已完成。
 
 ---
 
 ## P5 — 进阶 RAG
 
-- [x] **Agentic RAG**：低分时 `rewrite_query` 二次检索（`USE_AGENTIC_RAG`）
-- [x] **Graph RAG（轻量）**：`graph_rag.py` 章节标题加权
-- [x] **评估集与指标**：`data/eval_qa.json` + `evaluate.py`（Hit@K）
-- [ ] **多模态**：图片 PDF 嵌入（需多模态模型，暂未实现）
+- [x] Agentic RAG
+- [x] Graph RAG（轻量）
+- [x] 评估集与指标
+- [x] **多模态**：`multimodal.py` — PDF 内嵌图 + png/jpg/webp，Ollama 视觉模型描述后嵌入
 
 ---
 
-## 使用新增能力
+## 多模态使用
+
+1. 拉取视觉模型：`ollama pull llava`（或 `moondream`、`llava:13b` 等）
+2. `.env` 设置：`USE_MULTIMODAL=true`，`VISION_MODEL=llava`
+3. 将含图表的 PDF 或图片放入 `data/`，执行 `python ingest.py --rebuild`
+4. 图片描述会与正文一并分块、嵌入，问答时可检索到图表内容
+
+---
+
+## 可选增强（未列入 MVP）
+
+- [ ] 专用 CLIP / 多模态嵌入向量（与文本向量统一空间）
+- [ ] 视频帧抽取与描述
+- [ ] 在线增量更新视觉缓存，避免重复 describe
+
+---
+
+## 命令速查
 
 ```powershell
-# 评估检索质量（需已建索引且 Ollama 可用）
+python ingest.py --rebuild
 python evaluate.py
-
-# 嵌入批大小性能探测
-python profile_ingest.py --sizes 1 4 8 16
-
-# 启用 HyDE（.env 中 USE_HYDE=true）
-
-# OCR 可选依赖
-pip install -r requirements-ocr.txt
+streamlit run app.py
+uvicorn api:app --port 8000
 ```
-
----
-
-## 里程碑状态
-
-| 里程碑 | 状态 |
-|--------|------|
-| A 稳定日常使用 | 完成 |
-| B 检索变准 | 完成 |
-| C 可演示/集成 | 完成 |
-| P5 多模态 | 待做 |

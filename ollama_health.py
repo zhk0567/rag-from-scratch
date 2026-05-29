@@ -62,4 +62,11 @@ def get_health_status() -> dict[str, Any]:
     status["chat_model"] = {"ok": chat_ok, "message": chat_msg}
     status["messages"].extend([embed_msg, chat_msg])
     status["ok"] = embed_ok and chat_ok
+
+    if config.USE_MULTIMODAL:
+        vision_ok, vision_msg = check_model_pulled(config.VISION_MODEL)
+        status["vision_model"] = {"ok": vision_ok, "message": vision_msg}
+        status["messages"].append(vision_msg)
+        status["ok"] = status["ok"] and vision_ok
+
     return status

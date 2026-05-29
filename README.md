@@ -108,6 +108,14 @@ pip install -r requirements-ocr.txt
 
 `.env` 中可开启 `USE_HYDE=true`、`USE_QUERY_REWRITE=true`。
 
+### 9. 多模态（图片 / 含图 PDF）
+
+```powershell
+ollama pull llava
+```
+
+`.env` 中设置 `USE_MULTIMODAL=true`、`VISION_MODEL=llava`。支持 `png/jpg/webp` 及 PDF 内嵌图片（视觉描述后进入向量库）。
+
 ## 项目结构
 
 ```

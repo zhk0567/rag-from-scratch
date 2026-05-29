@@ -76,7 +76,12 @@ with st.sidebar:
     st.markdown(f"**{t('chat', lang)}**: `{config.CHAT_MODEL}`")
     st.markdown(f"**{t('hybrid', lang)}**: `{config.HYBRID_SEARCH}`")
     st.markdown(f"**{t('threshold', lang)}**: `{config.SIMILARITY_THRESHOLD}`")
-    st.caption(f"HyDE={config.USE_HYDE} | Agentic={config.USE_AGENTIC_RAG} | Graph={config.USE_GRAPH_RAG}")
+    st.caption(
+        f"HyDE={config.USE_HYDE} | Agentic={config.USE_AGENTIC_RAG} | "
+        f"Graph={config.USE_GRAPH_RAG} | Multimodal={config.USE_MULTIMODAL}"
+    )
+    if config.USE_MULTIMODAL:
+        st.caption(f"Vision: `{config.VISION_MODEL}` (max {config.MULTIMODAL_MAX_IMAGES} imgs/doc)")
 
     ok_ver, ver_msg = check_index_version()
     if not ok_ver:
@@ -98,7 +103,7 @@ with st.sidebar:
 
     uploaded = st.file_uploader(
         t("upload", lang),
-        type=["txt", "md", "pdf", "docx", "html"],
+        type=["txt", "md", "pdf", "docx", "html", "png", "jpg", "jpeg", "webp"],
         accept_multiple_files=True,
     )
     if uploaded and st.button(t("save_upload", lang)):
