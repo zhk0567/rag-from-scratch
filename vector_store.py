@@ -20,6 +20,15 @@ class VectorStore:
     def size(self) -> int:
         return len(self.ids)
 
+    @property
+    def embedding_dim(self) -> int:
+        if self.embeddings.size == 0:
+            return 0
+        return int(self.embeddings.shape[1])
+
+    def supports_hybrid(self) -> bool:
+        return True
+
     def clear(self) -> None:
         self.ids = []
         self.embeddings = np.array([], dtype=np.float32).reshape(0, 0)

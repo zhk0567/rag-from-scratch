@@ -28,23 +28,24 @@ from retrieval import (
     merge_similar_chunks,
     rerank_by_keywords,
 )
-from vector_store import VectorStore
+from store_factory import VectorStoreBackend, create_store, store_exists
 
 log = get_logger()
-_store: VectorStore | None = None
+_store: VectorStoreBackend | None = None
 
 
-def _get_store() -> VectorStore:
+def _get_store() -> VectorStoreBackend:
     global _store
     if _store is None:
-        _store = VectorStore()
+        _store = create_store()
         _store.load(config.STORAGE_DIR)
     return _store
 
 
 def reset_store() -> None:
     global _store
-    _store = VectorStore()
+    _store = create_store()
+    _store.clear()
 
 
 def _hits_to_sources(hits: list[tuple[float, dict[str, Any]]]) -> list[dict[str, Any]]:
@@ -66,7 +67,7 @@ def _hits_to_sources(hits: list[tuple[float, dict[str, Any]]]) -> list[dict[str,
 
 def _raw_retrieve(
     search_q: str,
-    store: VectorStore,
+    store: VectorStoreBackend,
     top_k: int,
 ) -> list[tuple[float, dict[str, Any]]]:
     q_vec = embed_texts([search_q])[0]
@@ -101,7 +102,7 @@ def _raw_retrieve(
 
 def _retrieve(
     question: str,
-    store: VectorStore,
+    store: VectorStoreBackend,
     top_k: int,
     history: list[dict[str, str]] | None = None,
 ) -> list[tuple[float, dict[str, Any]]]:
@@ -121,13 +122,13 @@ def _retrieve(
     return hits
 
 
-def _index_chunks(chunks: list, store: VectorStore | None = None) -> VectorStore:
+def _index_chunks(chunks: list, store: VectorStoreBackend | None = None) -> VectorStoreBackend:
     t_embed = time.perf_counter()
     vectors = embed_texts([c["text"] for c in chunks], batch_size=config.EMBED_BATCH_SIZE)
     embed_sec = time.perf_counter() - t_embed
 
     if store is None:
-        store = VectorStore()
+        store = create_store()
     store.add(chunks, vectors)
 
     graph = build_graph_from_chunks(chunks)
@@ -164,7 +165,7 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
             clear_cache()
         return _ingest_all(current_files, "rebuild", t0)
 
-    if incremental and VectorStore.exists(config.STORAGE_DIR):
+    if incremental and store_exists():
         manifest = load_manifest()
         added, modified, deleted = diff_files(manifest.get("files", {}), current_files)
         if not added and not modified and not deleted:
@@ -173,11 +174,11 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
             return {
                 "doc_count": len(current_files),
                 "chunk_count": store.size,
-                "dim": int(store.embeddings.shape[1]) if store.size else 0,
+                "dim": store.embedding_dim,
                 "mode": "skip",
             }
 
-        store = VectorStore()
+        store = create_store()
         store.load(config.STORAGE_DIR)
         to_remove = set(deleted) | set(modified)
         removed = store.remove_by_sources(to_remove)
@@ -191,7 +192,7 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
                 store = _index_chunks(chunks, store)
 
         store.save(config.STORAGE_DIR)
-        dim = int(store.embeddings.shape[1]) if store.size else 0
+        dim = store.embedding_dim
         save_manifest(current_files, config.EMBED_MODEL, dim)
         _store = store
 
@@ -223,7 +224,7 @@ def _ingest_all(current_files: dict, mode: str, t0: float) -> dict[str, Any]:
 
     store = _index_chunks(chunks)
     store.save(config.STORAGE_DIR)
-    dim = int(store.embeddings.shape[1]) if store.size else 0
+    dim = store.embedding_dim
     save_manifest(current_files, config.EMBED_MODEL, dim)
     _store = store
 
@@ -321,4 +322,4 @@ def query_with_stream(
 
 
 def has_index() -> bool:
-    return VectorStore.exists(config.STORAGE_DIR)
+    return store_exists()

@@ -98,6 +98,12 @@ uvicorn api:app --reload --port 8000
 
 多租户：设置 `TENANT_ID=team-a`，数据与索引隔离在 `data/team-a/`、`storage/team-a/`。
 
+**向量库**：`VECTOR_BACKEND=local|qdrant|milvus`（见 `requirements-qdrant.txt` / `requirements-milvus.txt`）
+
+**JWT**：`AUTH_MODE=jwt`，`POST /auth/token` 获取 Bearer Token
+
+**Prometheus**：`GET http://localhost:8000/metrics/prometheus`
+
 ### 8. 运行测试与评估
 
 ```powershell

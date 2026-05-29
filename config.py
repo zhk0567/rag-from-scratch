@@ -57,6 +57,23 @@ TENANT_ID = os.getenv("TENANT_ID", "").strip()
 API_KEY = os.getenv("API_KEY", "").strip()
 METRICS_ENABLED = os.getenv("METRICS_ENABLED", "true").lower() in ("1", "true", "yes")
 
+# 向量库后端: local | qdrant | milvus
+VECTOR_BACKEND = os.getenv("VECTOR_BACKEND", "local")
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "rag_chunks")
+MILVUS_URI = os.getenv("MILVUS_URI", "http://localhost:19530")
+MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "rag_chunks")
+
+# 鉴权: none | api_key | jwt | both
+AUTH_MODE = os.getenv("AUTH_MODE", "api_key")
+JWT_SECRET = os.getenv("JWT_SECRET", "").strip()
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
+
+PROMETHEUS_ENABLED = os.getenv("PROMETHEUS_ENABLED", "true").lower() in ("1", "true", "yes")
+
 
 def validate_config() -> None:
     if CHUNK_OVERLAP >= CHUNK_SIZE:
@@ -73,6 +90,10 @@ def validate_config() -> None:
         raise ValueError("VIDEO_MAX_FRAMES 必须 >= 1")
     if VIDEO_FRAME_INTERVAL_SEC < 1:
         raise ValueError("VIDEO_FRAME_INTERVAL_SEC 必须 >= 1")
+    if VECTOR_BACKEND not in ("local", "qdrant", "milvus"):
+        raise ValueError("VECTOR_BACKEND 须为 local | qdrant | milvus")
+    if AUTH_MODE not in ("none", "api_key", "jwt", "both"):
+        raise ValueError("AUTH_MODE 须为 none | api_key | jwt | both")
 
 
 validate_config()

@@ -1,63 +1,57 @@
 # 后续任务清单
 
-**全部功能已完成**（核心 + 可选 + 生产化）。
+**全部任务已完成**（含扩展生产化与向量库）。
 
 ---
 
-## 生产化增强（本轮）
+## 扩展能力（本轮）
 
-- [x] **API 鉴权**：`auth.py` — 环境变量 `API_KEY`，请求头 `X-API-Key`
-- [x] **运行指标**：`metrics.py` — `GET /metrics`（查询/建索引次数、平均耗时）
-- [x] **多租户隔离**：`TENANT_ID` — 数据与索引目录 `data/{tenant}/`、`storage/{tenant}/`
-- [x] **API 扩展**：`POST /query/stream` 流式、`POST /evaluate` 评估
-
----
-
-## 能力总览
-
-| 类别 | 模块 |
-|------|------|
-| RAG 核心 | `rag.py`, `loader`, `retrieval`, `vector_store` |
-| 多模态 | `multimodal`, `vision_cache`, `video_loader`, `clip_index` |
-| 生产 API | `api.py`, `auth.py`, `metrics.py` |
-| 运维 | `evaluate.py`, `profile_ingest.py`, Docker, CI |
+- [x] **Qdrant 向量库**：`VECTOR_BACKEND=qdrant`，`backends/qdrant_store.py`
+- [x] **Milvus 向量库**：`VECTOR_BACKEND=milvus`，`backends/milvus_store.py`
+- [x] **JWT 鉴权**：`POST /auth/token`，`AUTH_MODE=jwt|both`
+- [x] **Prometheus 导出**：`GET /metrics/prometheus`
 
 ---
 
-## API 示例
+## 向量库切换
+
+| 后端 | 配置 | 依赖 |
+|------|------|------|
+| local（默认） | `VECTOR_BACKEND=local` | 无 |
+| Qdrant | `VECTOR_BACKEND=qdrant` | `requirements-qdrant.txt` |
+| Milvus | `VECTOR_BACKEND=milvus` | `requirements-milvus.txt` |
 
 ```powershell
-$headers = @{ "X-API-Key" = "your-secret" }
-
-# 建索引
-Invoke-RestMethod -Method Post -Uri http://localhost:8000/ingest `
-  -Headers $headers -ContentType "application/json" `
-  -Body '{"rebuild":false}'
-
-# 问答
-Invoke-RestMethod -Method Post -Uri http://localhost:8000/query `
-  -Headers $headers -ContentType "application/json" `
-  -Body '{"question":"RAG 有哪些步骤？"}'
-
-# 指标
-Invoke-RestMethod -Uri http://localhost:8000/metrics -Headers $headers
+docker compose --profile qdrant up -d qdrant
+pip install -r requirements-qdrant.txt
+# .env: VECTOR_BACKEND=qdrant, QDRANT_URL=http://localhost:6333
+python ingest.py --rebuild
 ```
 
 ---
 
-## 多租户
+## 鉴权
 
-```env
-TENANT_ID=team-a
+| AUTH_MODE | 说明 |
+|-----------|------|
+| `none` | 不鉴权 |
+| `api_key` | 请求头 `X-API-Key` |
+| `jwt` | `Authorization: Bearer <token>` |
+| `both` | 二者任一有效即可 |
+
+```powershell
+# 获取 JWT
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/token `
+  -ContentType application/json `
+  -Body '{"username":"admin","password":"admin"}'
 ```
-
-文档放入 `data/team-a/`，索引写入 `storage/team-a/`（路径相对项目根目录的 `data` / `storage` 子目录）。
 
 ---
 
-## 图文统一向量空间
+## 监控
 
-启用 `USE_CLIP=true` 并安装 `requirements-clip.txt`，即使用 CLIP 在同一嵌入空间检索图片与文本（无需视觉描述中转）。
+- JSON 指标：`GET /metrics`（需鉴权）
+- Prometheus：`GET /metrics/prometheus`
 
 ---
 
@@ -66,5 +60,5 @@ TENANT_ID=team-a
 ```powershell
 uvicorn api:app --port 8000
 streamlit run app.py
-python evaluate.py
+pytest tests/ -v
 ```

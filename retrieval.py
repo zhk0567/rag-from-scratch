@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from vector_store import VectorStore
+from store_factory import VectorStoreBackend
 
 
 def _tokenize(text: str) -> list[str]:
@@ -72,7 +72,7 @@ def _rrf_merge(
 
 
 def hybrid_search(
-    store: VectorStore,
+    store: VectorStoreBackend,
     query: str,
     query_vector: np.ndarray,
     top_k: int,
@@ -81,10 +81,10 @@ def hybrid_search(
     n = retrieve_n or max(top_k * 3, top_k)
     vector_hits = store.search(query_vector, top_k=n)
 
-    if store.size == 0:
-        return []
+    if store.size == 0 or not store.supports_hybrid():
+        return vector_hits[:top_k]
 
-    corpus = [m["text"] for m in store.metadatas]
+    corpus = [m["text"] for m in store.metadatas]  # type: ignore[attr-defined]
     bm25 = SimpleBM25(corpus)
     bm25_scores = bm25.score_all(query)
     bm25_indices = np.argsort(bm25_scores)[::-1][:n]

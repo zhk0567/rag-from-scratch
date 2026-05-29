@@ -11,7 +11,7 @@ from i18n import DEMO_QUESTIONS, t
 from index_manifest import check_index_version
 from loader import SUPPORTED_EXTENSIONS
 from ollama_health import get_health_status
-from vector_store import VectorStore
+from store_factory import create_store
 
 if "ui_lang" not in st.session_state:
     st.session_state.ui_lang = config.UI_LANG
@@ -148,9 +148,11 @@ with st.sidebar:
                     st.error(str(e))
 
     if _index_ready():
-        store = VectorStore()
+        store = create_store()
         store.load(config.STORAGE_DIR)
-        st.info(t("index_blocks", lang, n=store.size))
+        st.info(
+            f"{t('index_blocks', lang, n=store.size)} | backend: {config.VECTOR_BACKEND}"
+        )
     else:
         st.warning(t("no_index", lang))
 
