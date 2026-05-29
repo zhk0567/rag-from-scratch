@@ -85,6 +85,17 @@ def _raw_retrieve(
         hits = boost_hits(hits, search_q, graph)
 
     hits = filter_by_threshold(hits, config.SIMILARITY_THRESHOLD)
+
+    if config.USE_CLIP:
+        try:
+            from clip_index import merge_with_text_hits, search_clip
+
+            clip_hits = search_clip(search_q, config.RETRIEVE_N)
+            if clip_hits:
+                hits = merge_with_text_hits(hits, clip_hits, config.RETRIEVE_N)
+        except Exception as e:
+            log.warning("CLIP 检索跳过: %s", e)
+
     return hits[:top_k]
 
 
@@ -126,6 +137,17 @@ def _index_chunks(chunks: list, store: VectorStore | None = None) -> VectorStore
     return store
 
 
+def _maybe_build_clip() -> None:
+    if not config.USE_CLIP:
+        return
+    try:
+        from clip_index import build_clip_index
+
+        build_clip_index()
+    except Exception as e:
+        log.warning("CLIP 索引跳过: %s", e)
+
+
 def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
     global _store
     t0 = time.perf_counter()
@@ -136,6 +158,10 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
             shutil.rmtree(config.STORAGE_DIR)
         config.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
         reset_store()
+        if config.USE_VISION_CACHE:
+            from vision_cache import clear_cache
+
+            clear_cache()
         return _ingest_all(current_files, "rebuild", t0)
 
     if incremental and VectorStore.exists(config.STORAGE_DIR):
@@ -170,6 +196,7 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
         _store = store
 
         elapsed = time.perf_counter() - t0
+        _maybe_build_clip()
         return {
             "doc_count": len(current_files),
             "chunk_count": store.size,
@@ -202,6 +229,7 @@ def _ingest_all(current_files: dict, mode: str, t0: float) -> dict[str, Any]:
 
     elapsed = time.perf_counter() - t0
     log.info("建索引完成 [%s] %d 文档, %d 块, %.2fs", mode, len(docs), store.size, elapsed)
+    _maybe_build_clip()
     return {
         "doc_count": len(docs),
         "chunk_count": store.size,

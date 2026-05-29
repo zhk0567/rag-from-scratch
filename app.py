@@ -82,6 +82,7 @@ with st.sidebar:
     )
     if config.USE_MULTIMODAL:
         st.caption(f"Vision: `{config.VISION_MODEL}` (max {config.MULTIMODAL_MAX_IMAGES} imgs/doc)")
+    st.caption(f"VisionCache={config.USE_VISION_CACHE} | CLIP={config.USE_CLIP}")
 
     ok_ver, ver_msg = check_index_version()
     if not ok_ver:
@@ -103,7 +104,7 @@ with st.sidebar:
 
     uploaded = st.file_uploader(
         t("upload", lang),
-        type=["txt", "md", "pdf", "docx", "html", "png", "jpg", "jpeg", "webp"],
+        type=["txt", "md", "pdf", "docx", "html", "png", "jpg", "jpeg", "webp", "mp4", "webm"],
         accept_multiple_files=True,
     )
     if uploaded and st.button(t("save_upload", lang)):

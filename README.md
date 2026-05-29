@@ -116,6 +116,16 @@ ollama pull llava
 
 `.env` 中设置 `USE_MULTIMODAL=true`、`VISION_MODEL=llava`。支持 `png/jpg/webp` 及 PDF 内嵌图片（视觉描述后进入向量库）。
 
+**可选增强**
+
+```powershell
+pip install -r requirements-video.txt   # mp4/webm 抽帧描述
+pip install -r requirements-clip.txt    # CLIP 图文双索引，.env: USE_CLIP=true
+```
+
+- `USE_VISION_CACHE=true`：相同图片不重复调用视觉模型（默认开启）
+
+
 ## 项目结构
 
 ```

@@ -45,6 +45,13 @@ USE_MULTIMODAL = os.getenv("USE_MULTIMODAL", "false").lower() in ("1", "true", "
 VISION_MODEL = os.getenv("VISION_MODEL", "llava")
 MULTIMODAL_MAX_IMAGES = int(os.getenv("MULTIMODAL_MAX_IMAGES", "10"))
 
+USE_VISION_CACHE = os.getenv("USE_VISION_CACHE", "true").lower() in ("1", "true", "yes")
+USE_CLIP = os.getenv("USE_CLIP", "false").lower() in ("1", "true", "yes")
+CLIP_MODEL = os.getenv("CLIP_MODEL", "clip-ViT-B-32")
+
+VIDEO_FRAME_INTERVAL_SEC = int(os.getenv("VIDEO_FRAME_INTERVAL_SEC", "5"))
+VIDEO_MAX_FRAMES = int(os.getenv("VIDEO_MAX_FRAMES", "20"))
+
 
 def validate_config() -> None:
     if CHUNK_OVERLAP >= CHUNK_SIZE:
@@ -57,6 +64,10 @@ def validate_config() -> None:
         raise ValueError("EMBED_WORKERS 必须 >= 1")
     if MULTIMODAL_MAX_IMAGES < 1:
         raise ValueError("MULTIMODAL_MAX_IMAGES 必须 >= 1")
+    if VIDEO_MAX_FRAMES < 1:
+        raise ValueError("VIDEO_MAX_FRAMES 必须 >= 1")
+    if VIDEO_FRAME_INTERVAL_SEC < 1:
+        raise ValueError("VIDEO_FRAME_INTERVAL_SEC 必须 >= 1")
 
 
 validate_config()

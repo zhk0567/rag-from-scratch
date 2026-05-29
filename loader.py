@@ -18,8 +18,11 @@ class Document(TypedDict):
 
 
 from multimodal import IMAGE_EXTENSIONS, describe_image_file, extract_pdf_image_descriptions, merge_text_and_vision
+from video_loader import VIDEO_EXTENSIONS, read_video_as_text
 
-SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx", ".html", ".htm"} | IMAGE_EXTENSIONS
+SUPPORTED_EXTENSIONS = (
+    {".txt", ".md", ".pdf", ".docx", ".html", ".htm"} | IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
+)
 
 
 def _read_text_file(path: Path) -> str:
@@ -77,6 +80,8 @@ def _read_file(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix in IMAGE_EXTENSIONS:
         return _read_image(path)
+    if suffix in VIDEO_EXTENSIONS:
+        return read_video_as_text(path)
     if suffix == ".pdf":
         return _read_pdf(path)
     if suffix == ".docx":

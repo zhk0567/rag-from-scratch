@@ -1,0 +1,4 @@
+# 可选：CLIP 图文跨模态双索引
+sentence-transformers>=2.2.0
+torch>=2.0.0
+Pillow>=10.0.0

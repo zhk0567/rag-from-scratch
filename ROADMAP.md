@@ -1,40 +1,54 @@
 # 后续任务清单
 
-全部核心路线已完成。
+**全部计划内能力已完成**（含可选增强）。
 
 ---
 
-## P5 — 进阶 RAG
+## 已完成：核心 + 可选增强
 
-- [x] Agentic RAG
-- [x] Graph RAG（轻量）
-- [x] 评估集与指标
-- [x] **多模态**：`multimodal.py` — PDF 内嵌图 + png/jpg/webp，Ollama 视觉模型描述后嵌入
-
----
-
-## 多模态使用
-
-1. 拉取视觉模型：`ollama pull llava`（或 `moondream`、`llava:13b` 等）
-2. `.env` 设置：`USE_MULTIMODAL=true`，`VISION_MODEL=llava`
-3. 将含图表的 PDF 或图片放入 `data/`，执行 `python ingest.py --rebuild`
-4. 图片描述会与正文一并分块、嵌入，问答时可检索到图表内容
+| 能力 | 模块 |
+|------|------|
+| RAG 全流程 | `rag.py`, `loader`, `chunker`, `embedder`, `vector_store` |
+| 混合检索 / Agentic / Graph | `retrieval.py`, `query_rewrite.py`, `graph_rag.py` |
+| 多模态（视觉描述） | `multimodal.py` |
+| **视觉描述缓存** | `vision_cache.py` — 相同图片不重复调用视觉模型 |
+| **视频帧描述** | `video_loader.py` — mp4/webm 等抽帧入库 |
+| **CLIP 双索引** | `clip_index.py` — 图文跨模态 RRF 融合（可选） |
+| 评估 / 性能探测 | `evaluate.py`, `profile_ingest.py` |
+| API / Docker / CI | `api.py`, `Dockerfile`, `.github/workflows/ci.yml` |
 
 ---
 
-## 可选增强（未列入 MVP）
+## 配置速查
 
-- [ ] 专用 CLIP / 多模态嵌入向量（与文本向量统一空间）
-- [ ] 视频帧抽取与描述
-- [ ] 在线增量更新视觉缓存，避免重复 describe
+```env
+# 视觉缓存（默认开）
+USE_VISION_CACHE=true
+
+# 视频（需 requirements-video.txt）
+VIDEO_FRAME_INTERVAL_SEC=5
+VIDEO_MAX_FRAMES=20
+
+# CLIP 双索引（需 requirements-clip.txt）
+USE_CLIP=false
+CLIP_MODEL=clip-ViT-B-32
+```
 
 ---
 
-## 命令速查
+## 命令
 
 ```powershell
+pip install -r requirements-video.txt   # 视频
+pip install -r requirements-clip.txt    # CLIP
 python ingest.py --rebuild
-python evaluate.py
 streamlit run app.py
-uvicorn api:app --port 8000
 ```
+
+---
+
+## 未来可探索（超出当前仓库范围）
+
+- 原生多模态嵌入 API（单向量空间、无需描述中转）
+- 分布式向量库与多租户
+- 生产级监控与鉴权

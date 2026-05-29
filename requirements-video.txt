@@ -1,0 +1,2 @@
+# 可选：视频抽帧
+opencv-python-headless>=4.8.0
