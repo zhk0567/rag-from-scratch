@@ -1,6 +1,6 @@
 """metrics 单元测试。"""
 
-from metrics import record_ingest, record_query, reset, snapshot
+from rag.metrics import record_ingest, record_query, reset, snapshot
 
 
 def test_metrics_snapshot():

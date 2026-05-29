@@ -5,9 +5,9 @@ from pathlib import Path
 
 import ollama
 
-import config
-from logger import get_logger
-from vision_cache import get_cached_description, set_cached_description
+from . import config
+from .logger import get_logger
+from .vision_cache import get_cached_description, set_cached_description
 
 log = get_logger()
 

@@ -5,8 +5,8 @@ from typing import TypedDict
 
 from pypdf import PdfReader
 
-import config
-from logger import get_logger
+from . import config
+from .logger import get_logger
 
 log = get_logger()
 
@@ -17,8 +17,8 @@ class Document(TypedDict):
     doc_id: str
 
 
-from multimodal import IMAGE_EXTENSIONS, describe_image_file, extract_pdf_image_descriptions, merge_text_and_vision
-from video_loader import VIDEO_EXTENSIONS, read_video_as_text
+from .multimodal import IMAGE_EXTENSIONS, describe_image_file, extract_pdf_image_descriptions, merge_text_and_vision
+from .video_loader import VIDEO_EXTENSIONS, read_video_as_text
 
 SUPPORTED_EXTENSIONS = (
     {".txt", ".md", ".pdf", ".docx", ".html", ".htm"} | IMAGE_EXTENSIONS | VIDEO_EXTENSIONS

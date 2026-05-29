@@ -3,8 +3,8 @@
 import pytest
 from fastapi import HTTPException
 
-import config
-from auth import require_auth
+from rag import config
+from rag.auth import require_auth
 
 
 def test_auth_disabled_when_mode_none():

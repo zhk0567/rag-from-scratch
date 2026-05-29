@@ -5,7 +5,7 @@ from typing import Any
 
 import jwt
 
-import config
+from . import config
 
 
 def create_access_token(subject: str, extra: dict[str, Any] | None = None) -> str:

@@ -1,6 +1,6 @@
 """multimodal 单元测试（不调用 Ollama）。"""
 
-from multimodal import IMAGE_EXTENSIONS, merge_text_and_vision
+from rag.multimodal import IMAGE_EXTENSIONS, merge_text_and_vision
 
 
 def test_merge_text_and_vision():

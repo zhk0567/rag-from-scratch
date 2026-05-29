@@ -3,8 +3,8 @@
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
-import config
-from jwt_auth import decode_access_token
+from . import config
+from .jwt_auth import decode_access_token
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 _bearer = HTTPBearer(auto_error=False)

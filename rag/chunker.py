@@ -3,7 +3,7 @@
 import re
 from typing import TypedDict
 
-from loader import Document
+from .loader import Document
 
 
 class Chunk(TypedDict):

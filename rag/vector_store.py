@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from chunker import Chunk
+from .chunker import Chunk
 
 
 class VectorStore:

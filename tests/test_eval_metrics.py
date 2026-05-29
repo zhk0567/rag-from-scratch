@@ -1,6 +1,6 @@
 """评估指标单元测试。"""
 
-from evaluate import hit_at_k, keyword_hit
+from rag.evaluate import hit_at_k, keyword_hit
 
 
 def test_hit_at_k():

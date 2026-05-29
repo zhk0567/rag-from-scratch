@@ -4,7 +4,7 @@ from typing import Any
 
 import ollama
 
-import config
+from . import config
 
 
 def check_ollama_running() -> tuple[bool, str]:

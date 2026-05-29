@@ -7,28 +7,28 @@ from typing import Any
 
 import ollama
 
-import config
-from chunker import split_documents
-from embedder import embed_texts
-from graph_rag import boost_hits, build_graph_from_chunks, load_graph, save_graph
-from index_manifest import (
+from . import config
+from .chunker import split_documents
+from .embedder import embed_texts
+from .graph_rag import boost_hits, build_graph_from_chunks, load_graph, save_graph
+from .index_manifest import (
     check_index_version,
     diff_files,
     load_manifest,
     save_manifest,
     scan_data_dir,
 )
-from loader import load_documents
-from logger import get_logger
-from prompts import build_rag_prompt
-from query_rewrite import build_search_query, rewrite_query
-from retrieval import (
+from .loader import load_documents
+from .logger import get_logger
+from .prompts import build_rag_prompt
+from .query_rewrite import build_search_query, rewrite_query
+from .retrieval import (
     filter_by_threshold,
     hybrid_search,
     merge_similar_chunks,
     rerank_by_keywords,
 )
-from store_factory import VectorStoreBackend, create_store, store_exists
+from .store_factory import VectorStoreBackend, create_store, store_exists
 
 log = get_logger()
 _store: VectorStoreBackend | None = None
@@ -89,7 +89,7 @@ def _raw_retrieve(
 
     if config.USE_CLIP:
         try:
-            from clip_index import merge_with_text_hits, search_clip
+            from .clip_index import merge_with_text_hits, search_clip
 
             clip_hits = search_clip(search_q, config.RETRIEVE_N)
             if clip_hits:
@@ -142,7 +142,7 @@ def _maybe_build_clip() -> None:
     if not config.USE_CLIP:
         return
     try:
-        from clip_index import build_clip_index
+        from .clip_index import build_clip_index
 
         build_clip_index()
     except Exception as e:
@@ -160,7 +160,7 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
         config.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
         reset_store()
         if config.USE_VISION_CACHE:
-            from vision_cache import clear_cache
+            from .vision_cache import clear_cache
 
             clear_cache()
         return _ingest_all(current_files, "rebuild", t0)

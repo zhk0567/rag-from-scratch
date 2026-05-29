@@ -7,10 +7,10 @@ from typing import Any
 
 import numpy as np
 
-import config
-from logger import get_logger
-from multimodal import IMAGE_EXTENSIONS
-from retrieval import _rrf_merge
+from . import config
+from .logger import get_logger
+from .multimodal import IMAGE_EXTENSIONS
+from .retrieval import rrf_merge
 
 log = get_logger()
 
@@ -24,7 +24,7 @@ def _get_clip_model():
             from sentence_transformers import SentenceTransformer
         except ImportError as e:
             raise ImportError(
-                "CLIP 需要: pip install -r requirements-clip.txt"
+                "CLIP 需要: pip install -r requirements/clip.txt"
             ) from e
         log.info("加载 CLIP 模型: %s", config.CLIP_MODEL)
         _model = SentenceTransformer(config.CLIP_MODEL)
@@ -153,5 +153,5 @@ def merge_with_text_hits(
 ) -> list[tuple[float, dict[str, Any]]]:
     if not clip_hits:
         return text_hits
-    merged = _rrf_merge(text_hits, clip_hits)
+    merged = rrf_merge(text_hits, clip_hits)
     return merged[:top_k]

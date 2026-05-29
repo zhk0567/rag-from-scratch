@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-import config
+from . import config
 
 _HEADER_RE = re.compile(r"^#{1,3}\s+(.+)$", re.MULTILINE)
 

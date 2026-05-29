@@ -1,20 +1,21 @@
 """FastAPI REST 服务（鉴权 + 指标 + 流式问答）。"""
 
 import time
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
-import config
-from auth import require_auth
-from evaluate import load_eval_cases, run_eval
-from jwt_auth import create_access_token
-from metrics import record_ingest, record_query, snapshot
-from ollama_health import get_health_status
-from prometheus_metrics import observe_ingest, observe_query, render_prometheus
-from rag import has_index, ingest, query, query_with_stream
+from rag import config
+from rag.auth import require_auth
+from rag.evaluate import DEFAULT_EVAL, load_eval_cases, run_eval
+from rag.jwt_auth import create_access_token
+from rag.metrics import record_ingest, record_query, snapshot
+from rag.ollama_health import get_health_status
+from rag.pipeline import has_index, ingest, query, query_with_stream
+from rag.prometheus_metrics import observe_ingest, observe_query, render_prometheus
 
 app = FastAPI(title="RAG API", version="1.2.0")
 
@@ -68,11 +69,11 @@ def health() -> dict[str, Any]:
 
 @app.post("/auth/token")
 def issue_token(req: TokenRequest) -> dict[str, str]:
-    """签发 JWT：用户名密码或有效 API Key。"""
     if not config.JWT_SECRET:
         raise HTTPException(400, detail="JWT_SECRET not configured")
 
     ok = False
+    subject = ""
     if req.api_key and config.API_KEY and req.api_key == config.API_KEY:
         ok = True
         subject = "api_key_user"
@@ -82,13 +83,12 @@ def issue_token(req: TokenRequest) -> dict[str, str]:
         and config.ADMIN_PASSWORD
     ):
         ok = True
-        subject = req.username
+        subject = req.username or "admin"
 
     if not ok:
         raise HTTPException(401, detail="Invalid credentials")
 
-    token = create_access_token(subject)
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": create_access_token(subject), "token_type": "bearer"}
 
 
 @app.get("/metrics")
@@ -166,7 +166,5 @@ def api_query_stream(req: QueryRequest) -> StreamingResponse:
 def api_evaluate(req: EvalRequest) -> dict[str, Any]:
     if not has_index():
         raise HTTPException(400, detail="Index not built. POST /ingest first.")
-    from pathlib import Path
-
-    cases = load_eval_cases(Path(__file__).parent / "data" / "eval_qa.json")
+    cases = load_eval_cases(DEFAULT_EVAL)
     return run_eval(cases, top_k=req.top_k)

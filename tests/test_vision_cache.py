@@ -1,7 +1,7 @@
 """vision_cache 单元测试。"""
 
-import config
-from vision_cache import get_cached_description, set_cached_description, load_cache
+from rag import config
+from rag.vision_cache import get_cached_description, set_cached_description, load_cache
 
 
 def test_vision_cache_roundtrip(tmp_path, monkeypatch):

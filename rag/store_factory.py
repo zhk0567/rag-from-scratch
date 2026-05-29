@@ -4,8 +4,8 @@ from typing import Any, Protocol
 
 import numpy as np
 
-import config
-from chunker import Chunk
+from . import config
+from .chunker import Chunk
 
 
 class VectorStoreBackend(Protocol):
@@ -30,14 +30,14 @@ class VectorStoreBackend(Protocol):
 def create_store() -> VectorStoreBackend:
     backend = config.VECTOR_BACKEND.lower()
     if backend == "qdrant":
-        from backends.qdrant_store import QdrantVectorStore
+        from .backends.qdrant_store import QdrantVectorStore
 
         return QdrantVectorStore()
     if backend == "milvus":
-        from backends.milvus_store import MilvusVectorStore
+        from .backends.milvus_store import MilvusVectorStore
 
         return MilvusVectorStore()
-    from vector_store import VectorStore
+    from .vector_store import VectorStore
 
     return VectorStore()
 
@@ -45,13 +45,13 @@ def create_store() -> VectorStoreBackend:
 def store_exists() -> bool:
     backend = config.VECTOR_BACKEND.lower()
     if backend == "qdrant":
-        from backends.qdrant_store import QdrantVectorStore
+        from .backends.qdrant_store import QdrantVectorStore
 
         return QdrantVectorStore.exists(config.STORAGE_DIR)
     if backend == "milvus":
-        from backends.milvus_store import MilvusVectorStore
+        from .backends.milvus_store import MilvusVectorStore
 
         return MilvusVectorStore.exists(config.STORAGE_DIR)
-    from vector_store import VectorStore
+    from .vector_store import VectorStore
 
     return VectorStore.exists(config.STORAGE_DIR)

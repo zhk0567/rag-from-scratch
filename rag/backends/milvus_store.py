@@ -6,9 +6,9 @@ from typing import Any
 
 import numpy as np
 
-import config
-from chunker import Chunk
-from logger import get_logger
+from .. import config
+from ..chunker import Chunk
+from ..logger import get_logger
 
 log = get_logger()
 
@@ -32,7 +32,7 @@ class MilvusVectorStore:
                 utility,
             )
         except ImportError as e:
-            raise ImportError("Milvus 需要: pip install -r requirements-milvus.txt") from e
+            raise ImportError("Milvus 需要: pip install -r requirements/milvus.txt") from e
 
         self._utility = utility
         self._Collection = Collection

@@ -1,7 +1,7 @@
 """chunker 单元测试。"""
 
-from chunker import split_documents
-from loader import Document
+from rag.chunker import split_documents
+from rag.loader import Document
 
 
 def test_split_markdown_by_headers():

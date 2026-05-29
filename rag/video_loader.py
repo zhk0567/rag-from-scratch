@@ -3,9 +3,9 @@
 import tempfile
 from pathlib import Path
 
-import config
-from logger import get_logger
-from multimodal import describe_image_bytes
+from . import config
+from .logger import get_logger
+from .multimodal import describe_image_bytes
 
 log = get_logger()
 

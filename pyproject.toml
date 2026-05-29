@@ -1,0 +1,10 @@
+[project]
+name = "rag-from-scratch"
+version = "1.0.0"
+description = "RAG system from scratch with Ollama and Streamlit"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

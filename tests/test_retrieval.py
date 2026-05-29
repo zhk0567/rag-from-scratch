@@ -1,6 +1,6 @@
 """retrieval 单元测试。"""
 
-from retrieval import SimpleBM25, filter_by_threshold, merge_similar_chunks
+from rag.retrieval import SimpleBM25, filter_by_threshold, merge_similar_chunks
 
 
 def test_bm25_ranks_relevant_doc():

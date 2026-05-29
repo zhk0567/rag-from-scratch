@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-import config
-from loader import SUPPORTED_EXTENSIONS
+from . import config
+from .loader import SUPPORTED_EXTENSIONS
 
 
 def _manifest_path() -> Path:

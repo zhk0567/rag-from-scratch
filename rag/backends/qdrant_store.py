@@ -6,9 +6,9 @@ from typing import Any
 
 import numpy as np
 
-import config
-from chunker import Chunk
-from logger import get_logger
+from .. import config
+from ..chunker import Chunk
+from ..logger import get_logger
 
 log = get_logger()
 
@@ -26,7 +26,7 @@ class QdrantVectorStore:
             from qdrant_client import QdrantClient
             from qdrant_client.http import models
         except ImportError as e:
-            raise ImportError("Qdrant 需要: pip install -r requirements-qdrant.txt") from e
+            raise ImportError("Qdrant 需要: pip install -r requirements/qdrant.txt") from e
 
         self._models = models
         self.client = QdrantClient(url=config.QDRANT_URL)

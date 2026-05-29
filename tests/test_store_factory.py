@@ -1,7 +1,7 @@
 """store_factory 单元测试。"""
 
-import config
-from store_factory import create_store, store_exists
+from rag import config
+from rag.store_factory import create_store, store_exists
 
 
 def test_create_local_store():

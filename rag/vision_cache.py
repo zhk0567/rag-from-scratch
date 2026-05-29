@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-import config
-from logger import get_logger
+from . import config
+from .logger import get_logger
 
 log = get_logger()
 

@@ -2,6 +2,8 @@
 
 基于 **Ollama**（本地嵌入 + 对话）与 **Streamlit** 的检索增强生成（RAG）教学项目。不依赖 LangChain，核心检索逻辑使用 NumPy 自实现。
 
+文档：[架构说明](docs/ARCHITECTURE.md) · [路线图](docs/ROADMAP.md) · [项目简介](docs/DESCRIPTION.md) · [变更日志](CHANGELOG.md)
+
 ## 功能
 
 - 从 `data/` 加载 `.txt`、`.md`、`.pdf`、`.docx`、`.html`
@@ -98,7 +100,7 @@ uvicorn api:app --reload --port 8000
 
 多租户：设置 `TENANT_ID=team-a`，数据与索引隔离在 `data/team-a/`、`storage/team-a/`。
 
-**向量库**：`VECTOR_BACKEND=local|qdrant|milvus`（见 `requirements-qdrant.txt` / `requirements-milvus.txt`）
+**向量库**：`VECTOR_BACKEND=local|qdrant|milvus`（见 `requirements/qdrant.txt` / `requirements/milvus.txt`）
 
 **JWT**：`AUTH_MODE=jwt`，`POST /auth/token` 获取 Bearer Token
 
@@ -115,7 +117,7 @@ python profile_ingest.py
 可选 OCR（扫描版 PDF）：
 
 ```powershell
-pip install -r requirements-ocr.txt
+pip install -r requirements/ocr.txt
 ```
 
 `.env` 中可开启 `USE_HYDE=true`、`USE_QUERY_REWRITE=true`。
@@ -131,8 +133,8 @@ ollama pull llava
 **可选增强**
 
 ```powershell
-pip install -r requirements-video.txt   # mp4/webm 抽帧描述
-pip install -r requirements-clip.txt    # CLIP 图文双索引，.env: USE_CLIP=true
+pip install -r requirements/video.txt   # mp4/webm 抽帧描述
+pip install -r requirements/clip.txt    # CLIP 图文双索引，.env: USE_CLIP=true
 ```
 
 - `USE_VISION_CACHE=true`：相同图片不重复调用视觉模型（默认开启）
@@ -141,20 +143,24 @@ pip install -r requirements-clip.txt    # CLIP 图文双索引，.env: USE_CLIP=
 ## 项目结构
 
 ```
-├── app.py              # Streamlit 界面
-├── api.py              # FastAPI REST
-├── ingest.py           # CLI 建索引
-├── rag.py              # RAG 流水线
-├── retrieval.py        # 混合检索 / 重排 / 去重
-├── ollama_health.py    # 健康检查
-├── index_manifest.py   # 增量索引清单
-├── prompts.py          # 提示词模板
-├── tests/              # 单元测试
-├── data/               # 知识库文档
-└── storage/            # 向量索引（自动生成）
+├── README.md
+├── LICENSE
+├── CHANGELOG.md
+├── requirements.txt          # → requirements/base.txt
+├── requirements/             # 可选依赖（见 requirements/README.md）
+├── ingest.py, app.py, api.py # 入口脚本
+├── evaluate.py, profile_ingest.py
+├── rag/                      # 核心 Python 包
+│   ├── pipeline.py           # ingest / query 编排
+│   ├── retrieval.py, embedder.py, vector_store.py
+│   └── backends/             # Qdrant / Milvus
+├── docs/                     # ROADMAP、ARCHITECTURE 等
+├── tests/
+├── data/                     # 知识库文档
+└── storage/                  # 向量索引（自动生成，已 gitignore）
 ```
 
-详见 [ROADMAP.md](ROADMAP.md) 了解已完成与待办项。
+详见 [docs/ROADMAP.md](docs/ROADMAP.md)（项目已结项 v1.0.0）。
 
 ## 配置说明
 
@@ -198,4 +204,4 @@ pip install -r requirements-clip.txt    # CLIP 图文双索引，.env: USE_CLIP=
 
 ## 许可证
 
-MIT（可按需修改）
+[MIT](LICENSE)

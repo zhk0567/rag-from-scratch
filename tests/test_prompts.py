@@ -1,6 +1,6 @@
 """prompts 单元测试。"""
 
-from prompts import build_rag_prompt
+from rag.prompts import build_rag_prompt
 
 
 def test_build_rag_prompt_includes_question_and_source():

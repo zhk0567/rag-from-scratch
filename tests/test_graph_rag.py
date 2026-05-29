@@ -1,6 +1,6 @@
 """graph_rag 单元测试。"""
 
-from graph_rag import boost_hits, build_graph_from_chunks
+from rag.graph_rag import boost_hits, build_graph_from_chunks
 
 
 def test_build_graph_from_markdown_chunks():

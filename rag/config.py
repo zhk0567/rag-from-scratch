@@ -5,8 +5,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-_ROOT = Path(__file__).resolve().parent
-load_dotenv(_ROOT / ".env")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
@@ -16,9 +16,9 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "./data"))
 STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "./storage"))
 
 if not DATA_DIR.is_absolute():
-    DATA_DIR = _ROOT / DATA_DIR
+    DATA_DIR = _PROJECT_ROOT / DATA_DIR
 if not STORAGE_DIR.is_absolute():
-    STORAGE_DIR = _ROOT / STORAGE_DIR
+    STORAGE_DIR = _PROJECT_ROOT / STORAGE_DIR
 
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "80"))

@@ -5,13 +5,13 @@ from datetime import datetime
 
 import streamlit as st
 
-import config
-import rag
-from i18n import DEMO_QUESTIONS, t
-from index_manifest import check_index_version
-from loader import SUPPORTED_EXTENSIONS
-from ollama_health import get_health_status
-from store_factory import create_store
+from rag import config
+from rag import ingest, has_index, query_with_stream, reset_store
+from rag.i18n import DEMO_QUESTIONS, t
+from rag.index_manifest import check_index_version
+from rag.loader import SUPPORTED_EXTENSIONS
+from rag.ollama_health import get_health_status
+from rag.store_factory import create_store
 
 if "ui_lang" not in st.session_state:
     st.session_state.ui_lang = config.UI_LANG
@@ -32,7 +32,7 @@ st.markdown(
 
 @st.cache_resource
 def _index_ready() -> bool:
-    return rag.has_index()
+    return has_index()
 
 
 def _render_sources(sources: list[dict]) -> None:
@@ -116,7 +116,7 @@ with st.sidebar:
     url = st.text_input(t("url_label", lang))
     if url and st.button(t("url_fetch", lang)):
         try:
-            from web_scrape import fetch_url_text
+            from rag.web_scrape import fetch_url_text
 
             text = fetch_url_text(url)
             safe_name = url.replace("https://", "").replace("http://", "").replace("/", "_")[:80]
@@ -131,17 +131,17 @@ with st.sidebar:
         if st.button(t("incr_index", lang)):
             with st.spinner("..."):
                 try:
-                    stats = rag.ingest(rebuild=False, incremental=True)
+                    stats = ingest(rebuild=False, incremental=True)
                     st.success(f"{stats['mode']}: {stats['chunk_count']}")
                     _index_ready.clear()
                 except Exception as e:
                     st.error(str(e))
     with col_b:
         if st.button(t("full_rebuild", lang), type="primary"):
-            rag.reset_store()
+            reset_store()
             with st.spinner("..."):
                 try:
-                    stats = rag.ingest(rebuild=True)
+                    stats = ingest(rebuild=True)
                     st.success(str(stats["chunk_count"]))
                     _index_ready.clear()
                 except Exception as e:
@@ -196,7 +196,7 @@ if prompt:
         answer = ""
         sources: list = []
         try:
-            stream, sources = rag.query_with_stream(prompt, history=history)
+            stream, sources = query_with_stream(prompt, history=history)
             answer = st.write_stream(stream)
         except Exception as e:
             answer = f"Error: {e}"

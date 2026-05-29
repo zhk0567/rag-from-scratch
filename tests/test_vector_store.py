@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from chunker import Chunk
-from vector_store import VectorStore
+from rag.chunker import Chunk
+from rag.vector_store import VectorStore
 
 
 def _chunk(text: str, source: str = "a.txt", idx: int = 0) -> Chunk:
