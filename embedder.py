@@ -1,4 +1,6 @@
-"""Ollama 嵌入 API 封装。"""
+"""Ollama 嵌入 API 封装（支持并发）。"""
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 import ollama
@@ -13,25 +15,29 @@ def _client():
     return ollama.Client(host=config.OLLAMA_HOST)
 
 
+def _embed_one(text: str) -> list[float]:
+    resp = _client().embeddings(model=config.EMBED_MODEL, prompt=text)
+    return resp["embedding"]
+
+
 def embed_texts(texts: list[str], batch_size: int | None = None) -> np.ndarray:
     if not texts:
         return np.array([], dtype=np.float32).reshape(0, 0)
 
-    batch_size = batch_size or config.EMBED_BATCH_SIZE
-    client = _client()
-    all_vectors: list[list[float]] = []
+    workers = min(config.EMBED_WORKERS, len(texts))
+    all_vectors: list[list[float] | None] = [None] * len(texts)
 
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        try:
-            for text in batch:
-                resp = client.embeddings(model=config.EMBED_MODEL, prompt=text)
-                all_vectors.append(resp["embedding"])
-        except Exception as e:
-            raise RuntimeError(
-                f"嵌入失败。请确认 Ollama 已启动（{config.OLLAMA_HOST}），"
-                f"且已执行: ollama pull {config.EMBED_MODEL}\n原始错误: {e}"
-            ) from e
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {pool.submit(_embed_one, t): i for i, t in enumerate(texts)}
+            for fut in as_completed(futures):
+                idx = futures[fut]
+                all_vectors[idx] = fut.result()
+    except Exception as e:
+        raise RuntimeError(
+            f"嵌入失败。请确认 Ollama 已启动（{config.OLLAMA_HOST}），"
+            f"且已执行: ollama pull {config.EMBED_MODEL}\n原始错误: {e}"
+        ) from e
 
-    log.debug("嵌入 %d 条文本", len(texts))
+    log.debug("嵌入 %d 条文本 (workers=%d)", len(texts), workers)
     return np.array(all_vectors, dtype=np.float32)

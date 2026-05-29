@@ -5,6 +5,7 @@ from typing import TypedDict
 
 from pypdf import PdfReader
 
+import config
 from logger import get_logger
 
 log = get_logger()
@@ -30,7 +31,12 @@ def _read_pdf(path: Path) -> str:
         text = page.extract_text() or ""
         if text.strip():
             parts.append(f"[第 {i} 页]\n{text}")
-    return "\n\n".join(parts)
+    extracted = "\n\n".join(parts)
+    if config.OCR_ENABLED:
+        from pdf_ocr import pdf_text_with_ocr_fallback
+
+        return pdf_text_with_ocr_fallback(path, extracted, config.OCR_MIN_TEXT_LEN)
+    return extracted
 
 
 def _read_docx(path: Path) -> str:

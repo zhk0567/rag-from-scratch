@@ -27,8 +27,19 @@ SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
 HYBRID_SEARCH = os.getenv("HYBRID_SEARCH", "true").lower() in ("1", "true", "yes")
 RETRIEVE_N = int(os.getenv("RETRIEVE_N", "12"))
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "32"))
+EMBED_WORKERS = int(os.getenv("EMBED_WORKERS", "4"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 CHAT_HISTORY_TURNS = int(os.getenv("CHAT_HISTORY_TURNS", "3"))
+
+USE_HYDE = os.getenv("USE_HYDE", "false").lower() in ("1", "true", "yes")
+USE_QUERY_REWRITE = os.getenv("USE_QUERY_REWRITE", "false").lower() in ("1", "true", "yes")
+USE_AGENTIC_RAG = os.getenv("USE_AGENTIC_RAG", "true").lower() in ("1", "true", "yes")
+AGENTIC_MIN_SCORE = float(os.getenv("AGENTIC_MIN_SCORE", "0.35"))
+USE_GRAPH_RAG = os.getenv("USE_GRAPH_RAG", "true").lower() in ("1", "true", "yes")
+
+OCR_ENABLED = os.getenv("OCR_ENABLED", "true").lower() in ("1", "true", "yes")
+OCR_MIN_TEXT_LEN = int(os.getenv("OCR_MIN_TEXT_LEN", "50"))
+UI_LANG = os.getenv("UI_LANG", "zh")
 
 
 def validate_config() -> None:
@@ -38,6 +49,8 @@ def validate_config() -> None:
         raise ValueError("TOP_K 必须 >= 1")
     if not 0 <= SIMILARITY_THRESHOLD <= 1:
         raise ValueError("SIMILARITY_THRESHOLD 须在 0~1 之间")
+    if EMBED_WORKERS < 1:
+        raise ValueError("EMBED_WORKERS 必须 >= 1")
 
 
 validate_config()

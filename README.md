@@ -92,11 +92,21 @@ uvicorn api:app --reload --port 8000
 
 文档：http://localhost:8000/docs
 
-### 8. 运行测试
+### 8. 运行测试与评估
 
 ```powershell
 pytest tests/ -v
+python evaluate.py
+python profile_ingest.py
 ```
+
+可选 OCR（扫描版 PDF）：
+
+```powershell
+pip install -r requirements-ocr.txt
+```
+
+`.env` 中可开启 `USE_HYDE=true`、`USE_QUERY_REWRITE=true`。
 
 ## 项目结构
 

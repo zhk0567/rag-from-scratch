@@ -10,6 +10,7 @@ import ollama
 import config
 from chunker import split_documents
 from embedder import embed_texts
+from graph_rag import boost_hits, build_graph_from_chunks, load_graph, save_graph
 from index_manifest import (
     check_index_version,
     diff_files,
@@ -20,6 +21,7 @@ from index_manifest import (
 from loader import load_documents
 from logger import get_logger
 from prompts import build_rag_prompt
+from query_rewrite import build_search_query, rewrite_query
 from retrieval import (
     filter_by_threshold,
     hybrid_search,
@@ -62,32 +64,69 @@ def _hits_to_sources(hits: list[tuple[float, dict[str, Any]]]) -> list[dict[str,
     return sources
 
 
-def _retrieve(question: str, store: VectorStore, top_k: int) -> list[tuple[float, dict[str, Any]]]:
-    q_vec = embed_texts([question])[0]
+def _raw_retrieve(
+    search_q: str,
+    store: VectorStore,
+    top_k: int,
+) -> list[tuple[float, dict[str, Any]]]:
+    q_vec = embed_texts([search_q])[0]
     if config.HYBRID_SEARCH and store.size > 0:
         hits = hybrid_search(
-            store, question, q_vec, top_k=config.RETRIEVE_N, retrieve_n=config.RETRIEVE_N
+            store, search_q, q_vec, top_k=config.RETRIEVE_N, retrieve_n=config.RETRIEVE_N
         )
     else:
         hits = store.search(q_vec, top_k=config.RETRIEVE_N)
 
-    hits = rerank_by_keywords(question, hits)
+    hits = rerank_by_keywords(search_q, hits)
     hits = merge_similar_chunks(hits)
+
+    if config.USE_GRAPH_RAG:
+        graph = load_graph()
+        hits = boost_hits(hits, search_q, graph)
+
     hits = filter_by_threshold(hits, config.SIMILARITY_THRESHOLD)
     return hits[:top_k]
 
 
-def _expand_query(question: str, history: list[dict[str, str]] | None) -> str:
-    parts = [question]
-    if history:
-        recent = [m["content"] for m in history if m.get("role") == "user"][-config.CHAT_HISTORY_TURNS :]
-        if recent:
-            parts.insert(0, " ".join(recent))
-    return " ".join(parts)
+def _retrieve(
+    question: str,
+    store: VectorStore,
+    top_k: int,
+    history: list[dict[str, str]] | None = None,
+) -> list[tuple[float, dict[str, Any]]]:
+    search_q = build_search_query(question, history)
+    hits = _raw_retrieve(search_q, store, top_k)
+
+    if config.USE_AGENTIC_RAG:
+        max_score = hits[0][0] if hits else 0.0
+        if not hits or max_score < config.AGENTIC_MIN_SCORE:
+            log.info("Agentic 重检索 (max_score=%.3f)", max_score)
+            alt_q = rewrite_query(question)
+            if alt_q != search_q:
+                alt_hits = _raw_retrieve(alt_q, store, top_k)
+                if alt_hits and (not hits or alt_hits[0][0] > max_score):
+                    hits = alt_hits
+
+    return hits
+
+
+def _index_chunks(chunks: list, store: VectorStore | None = None) -> VectorStore:
+    t_embed = time.perf_counter()
+    vectors = embed_texts([c["text"] for c in chunks], batch_size=config.EMBED_BATCH_SIZE)
+    embed_sec = time.perf_counter() - t_embed
+
+    if store is None:
+        store = VectorStore()
+    store.add(chunks, vectors)
+
+    graph = build_graph_from_chunks(chunks)
+    save_graph(graph)
+
+    log.info("嵌入 %d 块耗时 %.2fs", len(chunks), embed_sec)
+    return store
 
 
 def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
-    """加载文档、分块、嵌入并持久化；支持增量更新。"""
     global _store
     t0 = time.perf_counter()
     current_files = scan_data_dir()
@@ -123,8 +162,7 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
             docs = load_documents(config.DATA_DIR, sources=to_index)
             chunks = split_documents(docs, config.CHUNK_SIZE, config.CHUNK_OVERLAP)
             if chunks:
-                vectors = embed_texts([c["text"] for c in chunks], batch_size=config.EMBED_BATCH_SIZE)
-                store.add(chunks, vectors)
+                store = _index_chunks(chunks, store)
 
         store.save(config.STORAGE_DIR)
         dim = int(store.embeddings.shape[1]) if store.size else 0
@@ -132,7 +170,6 @@ def ingest(rebuild: bool = False, incremental: bool = True) -> dict[str, Any]:
         _store = store
 
         elapsed = time.perf_counter() - t0
-        log.info("增量建索引完成: %d 块, %.2fs", store.size, elapsed)
         return {
             "doc_count": len(current_files),
             "chunk_count": store.size,
@@ -157,11 +194,9 @@ def _ingest_all(current_files: dict, mode: str, t0: float) -> dict[str, Any]:
         save_manifest(current_files, config.EMBED_MODEL, 0)
         return {"doc_count": len(docs), "chunk_count": 0, "dim": 0, "mode": mode}
 
-    vectors = embed_texts([c["text"] for c in chunks], batch_size=config.EMBED_BATCH_SIZE)
-    store = VectorStore()
-    store.add(chunks, vectors)
+    store = _index_chunks(chunks)
     store.save(config.STORAGE_DIR)
-    dim = int(vectors.shape[1]) if vectors.size else 0
+    dim = int(store.embeddings.shape[1]) if store.size else 0
     save_manifest(current_files, config.EMBED_MODEL, dim)
     _store = store
 
@@ -195,8 +230,7 @@ def query(
         return {"answer": version_msg, "sources": []}
 
     t0 = time.perf_counter()
-    search_q = _expand_query(question, history)
-    hits = _retrieve(search_q, store, k)
+    hits = _retrieve(question, store, k, history)
     log.info("检索完成: %d 条命中, %.2fs", len(hits), time.perf_counter() - t0)
 
     prompt = build_rag_prompt(question, hits)
@@ -236,7 +270,6 @@ def query_with_stream(
     top_k: int | None = None,
     history: list[dict[str, str]] | None = None,
 ) -> tuple[Iterator[str], list[dict[str, Any]]]:
-    """返回 (token 迭代器, sources)。"""
     k = top_k if top_k is not None else config.TOP_K
     store = _get_store()
 
@@ -254,8 +287,7 @@ def query_with_stream(
 
         return _verr(), []
 
-    search_q = _expand_query(question, history)
-    hits = _retrieve(search_q, store, k)
+    hits = _retrieve(question, store, k, history)
     prompt = build_rag_prompt(question, hits)
     return _stream_answer(prompt), _hits_to_sources(hits)
 

@@ -1,0 +1,17 @@
+[
+  {
+    "question": "RAG 流水线包含哪些步骤？",
+    "expected_source": "sample.md",
+    "keywords": ["加载", "分块", "嵌入", "检索", "生成"]
+  },
+  {
+    "question": "默认的嵌入模型是什么？",
+    "expected_source": "sample.md",
+    "keywords": ["nomic-embed-text"]
+  },
+  {
+    "question": "向量存储使用什么技术？",
+    "expected_source": "sample.md",
+    "keywords": ["NumPy", "JSON"]
+  }
+]
