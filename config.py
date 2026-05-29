@@ -52,6 +52,11 @@ CLIP_MODEL = os.getenv("CLIP_MODEL", "clip-ViT-B-32")
 VIDEO_FRAME_INTERVAL_SEC = int(os.getenv("VIDEO_FRAME_INTERVAL_SEC", "5"))
 VIDEO_MAX_FRAMES = int(os.getenv("VIDEO_MAX_FRAMES", "20"))
 
+# 生产化：多租户隔离、API 鉴权
+TENANT_ID = os.getenv("TENANT_ID", "").strip()
+API_KEY = os.getenv("API_KEY", "").strip()
+METRICS_ENABLED = os.getenv("METRICS_ENABLED", "true").lower() in ("1", "true", "yes")
+
 
 def validate_config() -> None:
     if CHUNK_OVERLAP >= CHUNK_SIZE:
@@ -71,6 +76,10 @@ def validate_config() -> None:
 
 
 validate_config()
+
+if TENANT_ID:
+    DATA_DIR = DATA_DIR / TENANT_ID
+    STORAGE_DIR = STORAGE_DIR / TENANT_ID
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)

@@ -92,6 +92,12 @@ uvicorn api:app --reload --port 8000
 
 文档：http://localhost:8000/docs
 
+端点：`/health`、`/metrics`、`/ingest`、`/query`、`/query/stream`、`/evaluate`
+
+在 `.env` 设置 `API_KEY` 后，请求需带头：`X-API-Key: <your-key>`
+
+多租户：设置 `TENANT_ID=team-a`，数据与索引隔离在 `data/team-a/`、`storage/team-a/`。
+
 ### 8. 运行测试与评估
 
 ```powershell

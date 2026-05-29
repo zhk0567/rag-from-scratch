@@ -1,54 +1,70 @@
 # 后续任务清单
 
-**全部计划内能力已完成**（含可选增强）。
+**全部功能已完成**（核心 + 可选 + 生产化）。
 
 ---
 
-## 已完成：核心 + 可选增强
+## 生产化增强（本轮）
 
-| 能力 | 模块 |
+- [x] **API 鉴权**：`auth.py` — 环境变量 `API_KEY`，请求头 `X-API-Key`
+- [x] **运行指标**：`metrics.py` — `GET /metrics`（查询/建索引次数、平均耗时）
+- [x] **多租户隔离**：`TENANT_ID` — 数据与索引目录 `data/{tenant}/`、`storage/{tenant}/`
+- [x] **API 扩展**：`POST /query/stream` 流式、`POST /evaluate` 评估
+
+---
+
+## 能力总览
+
+| 类别 | 模块 |
 |------|------|
-| RAG 全流程 | `rag.py`, `loader`, `chunker`, `embedder`, `vector_store` |
-| 混合检索 / Agentic / Graph | `retrieval.py`, `query_rewrite.py`, `graph_rag.py` |
-| 多模态（视觉描述） | `multimodal.py` |
-| **视觉描述缓存** | `vision_cache.py` — 相同图片不重复调用视觉模型 |
-| **视频帧描述** | `video_loader.py` — mp4/webm 等抽帧入库 |
-| **CLIP 双索引** | `clip_index.py` — 图文跨模态 RRF 融合（可选） |
-| 评估 / 性能探测 | `evaluate.py`, `profile_ingest.py` |
-| API / Docker / CI | `api.py`, `Dockerfile`, `.github/workflows/ci.yml` |
+| RAG 核心 | `rag.py`, `loader`, `retrieval`, `vector_store` |
+| 多模态 | `multimodal`, `vision_cache`, `video_loader`, `clip_index` |
+| 生产 API | `api.py`, `auth.py`, `metrics.py` |
+| 运维 | `evaluate.py`, `profile_ingest.py`, Docker, CI |
 
 ---
 
-## 配置速查
-
-```env
-# 视觉缓存（默认开）
-USE_VISION_CACHE=true
-
-# 视频（需 requirements-video.txt）
-VIDEO_FRAME_INTERVAL_SEC=5
-VIDEO_MAX_FRAMES=20
-
-# CLIP 双索引（需 requirements-clip.txt）
-USE_CLIP=false
-CLIP_MODEL=clip-ViT-B-32
-```
-
----
-
-## 命令
+## API 示例
 
 ```powershell
-pip install -r requirements-video.txt   # 视频
-pip install -r requirements-clip.txt    # CLIP
-python ingest.py --rebuild
-streamlit run app.py
+$headers = @{ "X-API-Key" = "your-secret" }
+
+# 建索引
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/ingest `
+  -Headers $headers -ContentType "application/json" `
+  -Body '{"rebuild":false}'
+
+# 问答
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/query `
+  -Headers $headers -ContentType "application/json" `
+  -Body '{"question":"RAG 有哪些步骤？"}'
+
+# 指标
+Invoke-RestMethod -Uri http://localhost:8000/metrics -Headers $headers
 ```
 
 ---
 
-## 未来可探索（超出当前仓库范围）
+## 多租户
 
-- 原生多模态嵌入 API（单向量空间、无需描述中转）
-- 分布式向量库与多租户
-- 生产级监控与鉴权
+```env
+TENANT_ID=team-a
+```
+
+文档放入 `data/team-a/`，索引写入 `storage/team-a/`（路径相对项目根目录的 `data` / `storage` 子目录）。
+
+---
+
+## 图文统一向量空间
+
+启用 `USE_CLIP=true` 并安装 `requirements-clip.txt`，即使用 CLIP 在同一嵌入空间检索图片与文本（无需视觉描述中转）。
+
+---
+
+## 命令速查
+
+```powershell
+uvicorn api:app --port 8000
+streamlit run app.py
+python evaluate.py
+```

@@ -8,6 +8,7 @@ services:
       - ./storage:/app/storage
     environment:
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - TENANT_ID=${TENANT_ID:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -21,5 +22,7 @@ services:
       - ./storage:/app/storage
     environment:
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - API_KEY=${API_KEY:-}
+      - TENANT_ID=${TENANT_ID:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
